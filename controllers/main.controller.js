@@ -8,13 +8,13 @@ const GOOGLE_PROJECT_NUMBER = process.env.project_number;
 const GOOGLE_CALENDAR_ID = process.env.calendar_id;
 
 
-const SCOPES = ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events"];
-const jwtClient = new google.auth.JWT({
-  client_email: GOOGLE_CLIENT_EMAIL,
-  private_key: GOOGLE_PRIVATE_KEY,
-  scopes: SCOPES,
-  subject: "dev.reymalicdem@gmail.com"
-});
+const SCOPES = ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/admin.directory.resource.calendar"];
+const jwtClient = new google.auth.JWT(
+  GOOGLE_CLIENT_EMAIL,
+  null,
+  GOOGLE_PRIVATE_KEY,
+  SCOPES
+);
 
 const calendar = google.calendar({
   version: "v3",
@@ -31,7 +31,7 @@ const auth = new google.auth.GoogleAuth({
 exports.createEvent = async (requestBody, callback) => {
     try {
       auth.getClient().then((auth) => {
-        const calendar = google.calendar({ version: 'v3' });
+        // const calendar = google.calendar({ version: 'v3' });
         calendar.events.insert({
             calendarId: GOOGLE_CALENDAR_ID,
             auth: auth,
@@ -47,8 +47,8 @@ exports.createEvent = async (requestBody, callback) => {
               console.log('done')
                 callback({
                   success: true,
+                  message: 'sucessfully created an event ' +  event.data.htmlLink,
                   result:  event.data,
-                  message: 'sucessfully created an event ' +  event.data.htmlLink
                 })
             }
         });
@@ -60,30 +60,3 @@ exports.createEvent = async (requestBody, callback) => {
     }
 }
 
-
-
-// exports.createEvent = async (requestBody, callback) => {
-//   try {
-//     auth.getClient().then((auth) => {
-//       calendar.events.insert(
-//         {
-//           auth: auth,
-//           calendarId: GOOGLE_CALENDAR_ID,
-//           resource: requestBody,
-//         },
-//         function (error, response) {
-//           if (error) {
-//             console.log("Something went wrong: " + error);
-//             return;
-//           }
-//       console.log("Event created successfully.")
-//           console.log("Event details: ", response.data); 
-//         }
-//       );
-//     });
-//   } catch(err) {
-//       callback({
-//         error: 'error' + err
-//       })
-//   }
-// }
