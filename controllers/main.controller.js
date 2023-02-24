@@ -2,7 +2,6 @@ const path = require('path');
 const {google} = require('googleapis');
 const moment = require('moment-timezone');
 require("dotenv").config();
-const {authenticate} = require('@google-cloud/local-auth');
 const fs = require('fs').promises;
 const process = require('process');
 
@@ -51,9 +50,9 @@ async function authorize() {
   if (client) {
     return client;
   }
-  client = await authenticate({
+  client = new google.auth.GoogleAuth({
+    keyFile: CREDENTIALS_PATH,
     scopes: SCOPES,
-    keyfilePath: CREDENTIALS_PATH,
   });
   if (client.credentials) {
     await saveCredentials(client);
