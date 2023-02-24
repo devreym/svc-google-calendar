@@ -9,6 +9,5 @@ fastify.listen({ port }, (err) => {
         process.exit(1)
     } else {
         console.log("listening to port: " + port);
-        console.log("calendarId " + process.env.CALENDAR_ID)
     }
 })
