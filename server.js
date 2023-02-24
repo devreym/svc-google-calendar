@@ -1,13 +1,18 @@
-let port = process.env.PORT || 7000
-const fastify = require('fastify')({ logger: true, bodyLimit: 52428800 });
+const bodyParser = require('body-parser');
+const express = require('express')
+const app = express();
+const config = require('./configs/config');
 
-fastify.register(require('./routes/main.routes'));
 
-fastify.listen({ port }, (err) => {
-    if (err) {
-        fastify.log.error(err)
-        process.exit(1)
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ type: 'application/json' }));
+app.use(bodyParser.text({ type: 'text/plain' }));
+config.addRoutes(app);
+
+app.listen(config.port, (err) => {
+    if(!err){
+        console.log(`Example app listening on port ${config.port}`)
     } else {
-        console.log("listening to port: " + port);
+        console.log("Error occurred, server can't start", error);
     }
 })
