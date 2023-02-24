@@ -1,37 +1,75 @@
 const path = require('path');
 const {google} = require('googleapis');
+const moment = require('moment-timezone');
 require("dotenv").config();
+const {authenticate} = require('@google-cloud/local-auth');
+const fs = require('fs').promises;
+const process = require('process');
 
-const GOOGLE_PRIVATE_KEY = process.env.PRIVATE_KEY;
-const GOOGLE_CLIENT_EMAIL = process.env.CLIENT_EMAIL;
-const GOOGLE_PROJECT_NUMBER = process.env.PROJECT_NUMBER;
 const GOOGLE_CALENDAR_ID = process.env.CALENDAR_ID;
 
-
 const SCOPES = ["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/gmail.send", "https://www.googleapis.com/auth/admin.directory.resource.calendar"];
-const jwtClient = new google.auth.JWT(
-  GOOGLE_CLIENT_EMAIL,
-  null,
-  GOOGLE_PRIVATE_KEY,
-  SCOPES
-);
+const TOKEN_PATH = path.join(process.cwd(), './secrets/token.json');
+const CREDENTIALS_PATH = path.join(process.cwd(), './secrets/credentials.json');
 
-const calendar = google.calendar({
-  version: "v3",
-  project: GOOGLE_PROJECT_NUMBER,
-  auth: jwtClient,
-});
+/**
+ * Reads previously authorized credentials from the save file.
+ *
+ * @return {Promise<OAuth2Client|null>}
+ */
+async function loadSavedCredentialsIfExist() {
+  try {
+    const content = await fs.readFile(TOKEN_PATH);
+    const credentials = JSON.parse(content);
+    return google.auth.fromJSON(credentials);
+  } catch (err) {
+    return null;
+  }
+}
 
-const auth = new google.auth.GoogleAuth({
-  keyFile: "./keys.json",
-  scopes: SCOPES
-});
+/**
+ * Serializes credentials to a file compatible with GoogleAUth.fromJSON.
+ *
+ * @param {OAuth2Client} client
+ * @return {Promise<void>}
+ */
+async function saveCredentials(client) {
+  const content = await fs.readFile(CREDENTIALS_PATH);
+  const keys = JSON.parse(content);
+  const key = keys.installed || keys.web;
+  const payload = JSON.stringify({
+    type: 'authorized_user',
+    client_id: key.client_id,
+    client_secret: key.client_secret,
+    refresh_token: client.credentials.refresh_token,
+  });
+  await fs.writeFile(TOKEN_PATH, payload);
+}
+
+async function authorize() {
+  let client = await loadSavedCredentialsIfExist();
+  if (client) {
+    return client;
+  }
+  client = await authenticate({
+    scopes: SCOPES,
+    keyfilePath: CREDENTIALS_PATH,
+  });
+  if (client.credentials) {
+    await saveCredentials(client);
+  }
+  return client;
+}
+
+
+
+
 
 
 exports.createEvent = async (requestBody, callback) => {
     try {
-      auth.getClient().then((auth) => {
-        // const calendar = google.calendar({ version: 'v3' });
+      authorize().then((auth) => {
+        const calendar = google.calendar({ version: 'v3' });
         calendar.events.insert({
             calendarId: GOOGLE_CALENDAR_ID,
             auth: auth,
@@ -59,4 +97,3 @@ exports.createEvent = async (requestBody, callback) => {
         })
     }
 }
-
