@@ -1,7 +1,7 @@
 const path = require('path');
 const {google} = require('googleapis');
 const moment = require('moment-timezone');
-require("dotenv").config();
+// require("dotenv").config();
 const fs = require('fs').promises;
 const process = require('process');
 
